@@ -16,7 +16,7 @@ function Addsschool() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Submit manually to backend
+  // ✅ Manually add a school
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -28,7 +28,7 @@ function Addsschool() {
 
       if (response.ok) {
         const newSchool = await response.json();
-        setSchools([newSchool, ...schools]); // save with ID from backend
+        setSchools([newSchool, ...schools]);
         setFormData({
           school_name: '',
           phone: '',
@@ -45,7 +45,7 @@ function Addsschool() {
     }
   };
 
-  // ✅ Upload Excel and POST to backend
+  // ✅ Excel file upload handler
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -82,7 +82,7 @@ function Addsschool() {
     reader.readAsBinaryString(file);
   };
 
-  // ✅ Download sample Excel
+  // ✅ Download sample Excel format
   const downloadSample = () => {
     const sampleData = [{
       'School Name': 'Oxford High School',
@@ -98,7 +98,7 @@ function Addsschool() {
     XLSX.writeFile(workbook, 'sample_school_list.xlsx');
   };
 
-  // ✅ Delete from UI and Backend
+  // ✅ Delete school from backend and UI
   const handleDelete = async (index, id) => {
     try {
       const res = await fetch(`http://127.0.0.1:8000/api/schools/${id}/`, {
@@ -157,13 +157,17 @@ function Addsschool() {
       </div>
 
       <hr className="my-5" />
+      <button
+        className="btn btn-success px-2 py-1 rounded-pill fw-semibold shadow-sm mb-4"
+        style={{ fontSize: "12px", lineHeight: "1" }}
+        onClick={downloadSample}
+      >
+        📄 Sample Excel Format
+      </button>
 
       <div className="card shadow-sm p-4 rounded-4 bg-light">
         <h4 className="mb-3">📤 Upload Schools via Excel</h4>
         <input type="file" accept=".xlsx, .xls" className="form-control mb-3" onChange={handleFileUpload} />
-        <button className="btn btn-outline-primary" onClick={downloadSample}>
-          ⬇️ Download Sample Excel Format
-        </button>
       </div>
 
       {schools.length > 0 && (
@@ -194,7 +198,7 @@ function Addsschool() {
                     <td>
                       <button
                         className="btn btn-sm btn-danger"
-                        onClick={() => handleDelete(index, school.id)} // 🧠 ID passed here
+                        onClick={() => handleDelete(index, school.id)}
                       >
                         🗑️ Delete
                       </button>

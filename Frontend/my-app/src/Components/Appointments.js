@@ -4,12 +4,12 @@ import * as XLSX from 'xlsx';
 function Appointments() {
   const [schools, setSchools] = useState([]);
   const [appointments, setAppointments] = useState([]);
-  const [filtered, setFiltered] = useState([]);
+  const [filteredSchools, setFilteredSchools] = useState([]);
   const [filteredAppointments, setFilteredAppointments] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [form, setForm] = useState({ status: 'Pending', date: '', time: '', description: '' });
   const [filters, setFilters] = useState({
-    school_name: '', phone: '', state: '', district: '', area: '', status: ''
+    school_name: '', phone: '', state: '', district: '', area: '', status: '', incharge: ''
   });
 
   const pendingReasons = [
@@ -35,7 +35,7 @@ function Appointments() {
       .then(res => res.json())
       .then(data => {
         setSchools(data);
-        setFiltered(data);
+        setFilteredSchools(data);
       });
 
     fetch('http://127.0.0.1:8000/api/appointments/')
@@ -48,23 +48,25 @@ function Appointments() {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    const newFilters = { ...filters, [name]: value };
-    setFilters(newFilters);
+    const updatedFilters = { ...filters, [name]: value };
+    setFilters(updatedFilters);
 
-    const result = appointments.filter(app => {
-      return Object.keys(newFilters).every(key =>
-        newFilters[key] === '' || String(app[key] || '').toLowerCase().includes(newFilters[key].toLowerCase())
-      );
-    });
+    const result = appointments.filter(app =>
+      Object.keys(updatedFilters).every(
+        key =>
+          updatedFilters[key] === '' ||
+          String(app[key] || '').toLowerCase().includes(updatedFilters[key].toLowerCase())
+      )
+    );
     setFilteredAppointments(result);
   };
 
   const handleSchoolSearch = (e) => {
-    const val = e.target.value.toLowerCase();
-    const results = schools.filter(s =>
-      Object.values(s).some(v => String(v).toLowerCase().includes(val))
+    const value = e.target.value.toLowerCase();
+    const result = schools.filter(s =>
+      Object.values(s).some(v => String(v).toLowerCase().includes(value))
     );
-    setFiltered(results);
+    setFilteredSchools(result);
   };
 
   const selectSchool = (school) => {
@@ -78,6 +80,7 @@ function Appointments() {
 
   const handleAppointment = async () => {
     if (!selectedSchool) return;
+
     const payload = {
       ...selectedSchool,
       ...form,
@@ -91,11 +94,12 @@ function Appointments() {
 
     if (res.ok) {
       const newAppt = await res.json();
-      setAppointments([newAppt, ...appointments]);
-      setFilteredAppointments([newAppt, ...filteredAppointments]);
+      const updated = [newAppt, ...appointments];
+      setAppointments(updated);
+      setFilteredAppointments(updated);
       setSelectedSchool(null);
     } else {
-      alert('Failed to save appointment');
+      alert("Failed to save appointment");
     }
   };
 
@@ -113,20 +117,19 @@ function Appointments() {
       <input
         type="text"
         className="form-control mb-3"
-        placeholder="Search school by name, phone, district..."
+        placeholder="Search school by name, phone, district, area..."
         onChange={handleSchoolSearch}
       />
 
+      {/* FORM: Ask Appointment */}
       {selectedSchool ? (
-        <div className="card p-4 mb-4 shadow-sm border border-success rounded-4">
-          <h5 className="mb-3 text-primary">
-            Set Appointment for: <b>{selectedSchool.school_name}</b>
-          </h5>
+        <div className="card p-4 mb-4 border-success shadow-sm rounded-4">
+          <h5 className="text-primary">Appointment for: <b>{selectedSchool.school_name}</b></h5>
 
-          <div className="row g-3">
+          <div className="row g-3 mt-2">
             <div className="col-md-4">
               <label>Status</label>
-              <select name="status" className="form-select" value={form.status} onChange={handleFormChange}>
+              <select className="form-select" name="status" value={form.status} onChange={handleFormChange}>
                 <option>Pending</option>
                 <option>Fixed</option>
               </select>
@@ -136,50 +139,46 @@ function Appointments() {
               <>
                 <div className="col-md-4">
                   <label>Date</label>
-                  <input type="date" name="date" className="form-control" value={form.date} onChange={handleFormChange} />
+                  <input type="date" className="form-control" name="date" value={form.date} onChange={handleFormChange} />
                 </div>
                 <div className="col-md-4">
                   <label>Time</label>
-                  <input type="time" name="time" className="form-control" value={form.time} onChange={handleFormChange} />
+                  <input type="time" className="form-control" name="time" value={form.time} onChange={handleFormChange} />
                 </div>
               </>
             )}
 
             <div className="col-12">
-              <label>{form.status === 'Fixed' ? 'Description' : 'Reason for pending'}</label>
+              <label>{form.status === 'Pending' ? "Pending Reason" : "Description"}</label>
               {form.status === 'Pending' ? (
                 <select name="description" className="form-select" value={form.description} onChange={handleFormChange}>
-                  {pendingReasons.map((reason, i) => (
-                    <option key={i} value={reason}>{reason}</option>
+                  {pendingReasons.map((reason, idx) => (
+                    <option key={idx} value={reason}>{reason}</option>
                   ))}
                 </select>
               ) : (
-                <textarea
-                  name="description"
-                  className="form-control"
-                  rows="2"
-                  value={form.description}
-                  onChange={handleFormChange}
-                />
+                <textarea className="form-control" name="description" rows="2" value={form.description} onChange={handleFormChange} />
               )}
             </div>
-          </div>
 
-          <button onClick={handleAppointment} className="btn btn-success mt-3">
-            Save Appointment
-          </button>
+            <div className="col-12 text-end">
+              <button onClick={handleAppointment} className="btn btn-success mt-3">
+                ✅ Submit Appointment
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="row">
-          {filtered.map((school, i) => (
+          {filteredSchools.map((school, i) => (
             <div key={i} className="col-md-6 col-lg-4 mb-3">
-              <div className="card shadow p-3 border border-light rounded-4">
+              <div className="card border-light shadow-sm p-3 rounded-4">
                 <h5>{school.school_name}</h5>
-                <p><strong>Phone:</strong> {school.phone}</p>
-                <p><strong>State:</strong> {school.state}</p>
-                <p><strong>District:</strong> {school.district}</p>
-                <p><strong>Area:</strong> {school.area}</p>
-                <button onClick={() => selectSchool(school)} className="btn btn-outline-primary mt-2">
+                <p><b>📞</b> {school.phone}</p>
+                <p><b>📍</b> {school.state}, {school.district}</p>
+                <p><b>🏠</b> Area: {school.area}</p>
+                <p><b>👤</b> Incharge: {school.incharge}</p>
+                <button className="btn btn-outline-primary" onClick={() => selectSchool(school)}>
                   Ask Appointment
                 </button>
               </div>
@@ -188,19 +187,20 @@ function Appointments() {
         </div>
       )}
 
-      {appointments.length > 0 && (
+      {/* Appointments Log */}
+      {filteredAppointments.length > 0 && (
         <>
           <hr className="my-4" />
-          <h4 className="text-center text-warning">📝 Appointments Log</h4>
+          <h4 className="text-center text-warning">📘 Appointment Logs</h4>
 
           {/* Filters */}
-          <div className="row mb-3 g-2">
-            {['school_name', 'phone', 'state', 'district', 'area', 'status'].map((field, i) => (
-              <div className="col-md-2" key={i}>
+          <div className="row g-2 mb-3">
+            {['school_name', 'phone', 'state', 'district', 'area', 'incharge', 'status'].map((field, i) => (
+              <div key={i} className="col-md-2">
                 <input
-                  name={field}
-                  placeholder={field.replace('_', ' ')}
                   className="form-control"
+                  placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                  name={field}
                   value={filters[field]}
                   onChange={handleFilterChange}
                 />
@@ -208,21 +208,22 @@ function Appointments() {
             ))}
           </div>
 
-          {/* Excel export */}
+          {/* Export */}
           <button className="btn btn-outline-primary mb-3" onClick={exportToExcel}>
             ⬇️ Export to Excel
           </button>
 
           {/* Table */}
           <div className="table-responsive">
-            <table className="table table-bordered mt-2">
-              <thead className="table-secondary">
+            <table className="table table-bordered table-striped">
+              <thead className="table-light">
                 <tr>
-                  <th>School Name</th>
+                  <th>School</th>
                   <th>Phone</th>
                   <th>State</th>
                   <th>District</th>
                   <th>Area</th>
+                  <th>Incharge</th>
                   <th>Status</th>
                   <th>Date</th>
                   <th>Time</th>
@@ -237,6 +238,7 @@ function Appointments() {
                     <td>{appt.state}</td>
                     <td>{appt.district}</td>
                     <td>{appt.area}</td>
+                    <td>{appt.incharge}</td>
                     <td>{appt.status}</td>
                     <td>{appt.date || '-'}</td>
                     <td>{appt.time || '-'}</td>

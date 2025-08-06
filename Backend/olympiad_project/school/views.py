@@ -1,11 +1,7 @@
 from rest_framework import viewsets
-from .models import School, Appointment
-from .serializers import SchoolSerializer, AppointmentSerializer
+from .models import School
+from .serializers import SchoolSerializer
 
 class SchoolViewSet(viewsets.ModelViewSet):
-    queryset = School.objects.all()
+    queryset = School.objects.all().order_by('-id')
     serializer_class = SchoolSerializer
-
-class AppointmentViewSet(viewsets.ModelViewSet):
-    queryset = Appointment.objects.all().select_related('school')
-    serializer_class = AppointmentSerializer
